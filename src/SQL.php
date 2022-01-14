@@ -103,6 +103,13 @@ class SQL {
 	}
 	*/
 
+	static function init(string $host, string $database, string $username = "root", string $password = "") {
+		$mysqli = mysqli_connect($host, $username, $password) or die("Can't connect to database");
+		mysqli_select_db($mysqli, $database) or die ("Can't select database");
+		mysqli_set_charset($mysqli, "utf8mb4");
+		return $mysqli;
+	}
+
 
 //Helper functions
 	static function fetch_md_array($results): array {
