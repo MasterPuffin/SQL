@@ -1,0 +1,19 @@
+{
+    "name": "masterpuffin/sql",
+    "description": "SQL Tools",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Masterpuffin\\Sql\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "MasterPuffin",
+            "email": "git@pxmo.de"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {}
+}
