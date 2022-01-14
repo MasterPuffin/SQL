@@ -1,7 +1,5 @@
 <?php
 
-namespace MasterPuffin;
-
 class SQL {
 	//Returns insert id
 	static function iud(string $query, string $paramtypes = "", ...$values): int {

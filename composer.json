@@ -5,9 +5,7 @@
     "type": "library",
     "license": "MIT",
     "autoload": {
-        "psr-4": {
-            "sql\\": "src/"
-        }
+        "classmap": ["src/SQL.php"]
     },
     "authors": [
         {
