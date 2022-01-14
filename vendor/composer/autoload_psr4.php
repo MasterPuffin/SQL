@@ -6,5 +6,5 @@ $vendorDir = dirname(dirname(__FILE__));
 $baseDir = dirname($vendorDir);
 
 return array(
-    'Masterpuffin\\Sql\\' => array($baseDir . '/src'),
+    'sql\\' => array($baseDir . '/src'),
 );
