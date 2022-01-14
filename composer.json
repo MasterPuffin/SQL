@@ -6,7 +6,7 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Masterpuffin\\Sql\\": "src/"
+            "sql\\": "src/"
         }
     },
     "authors": [
@@ -17,6 +17,7 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "php": ">=7.4"
+        "php": ">=7.4",
+        "ext-mysqli": "*"
     }
 }
