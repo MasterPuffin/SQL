@@ -1,5 +1,7 @@
 <?php
 
+require_once 'SQLSession.php';
+
 class SQL {
 	//Returns insert id
 	static function iud(string $query, string $paramtypes = "", ...$values): int {
@@ -24,10 +26,10 @@ class SQL {
 	}
 
 	private static function doIUD($query, $paramtypes, $values): int {
-		global $mysqli;
-		$stmt = $mysqli->prepare($query);
+		global $sql;
+		$stmt = $sql->mysqli->prepare($query);
 		if ($stmt === false) {
-			error_log('Error preparing statement for query: ' . $query . ';' . json_encode($mysqli->error_list));
+			error_log('Error preparing statement for query: ' . $query . ';' . json_encode($sql->mysqli->error_list));
 			throw new Exception();
 		}
 
@@ -49,65 +51,64 @@ class SQL {
 	}
 
 	static function select(string $query, string $paramtypes = "", ...$values) {
-		global $mysqli;
-		$stmt = $mysqli->prepare($query);
+		global $sql;
+
+		$cacheStr = self::toCacheString($query, $paramtypes, ...$values);
+		if ($sql->useCaching && array_key_exists($cacheStr, $sql->cache)) {
+			return $sql->cache[$stmt];
+		}
+
+		$stmt = $sql->mysqli->prepare($query);
 		if (!empty($paramtypes)) {
 			$stmt->bind_param($paramtypes, ...$values);
 			if ($stmt->param_count != count($values)) {
 				error_log('Wrong parameter count for query: ' . $query);
 			}
 		}
+
 		$stmt->execute();
 		$Array = $stmt->get_result()->fetch_array(MYSQLI_ASSOC);
 		$stmt->close();
+
+		if ($sql->useCaching) {
+			$sql->cache[$cacheStr] = $Array;
+		}
+
 		return $Array;
 	}
 
 	static function select_array(string $query, string $paramtypes = "", ...$values): array {
-		global $mysqli;
-		$stmt = $mysqli->prepare($query);
+		global $sql;
+
+		$cacheStr = self::toCacheString($query, $paramtypes, ...$values);
+		if ($sql->useCaching && array_key_exists($cacheStr, $sql->cache)) {
+			return $sql->cache[$stmt];
+		}
+
+		$stmt = $sql->mysqli->prepare($query);
 		if (!empty($paramtypes)) {
 			$stmt->bind_param($paramtypes, ...$values);
 			if ($stmt->param_count != count($values)) {
 				error_log('Wrong parameter count for query: ' . $query);
 			}
 		}
+
 		$stmt->execute();
 		$results = $stmt->get_result();
 		$stmt->close();
+
+		if ($sql->useCaching) {
+			$sql->cache[$cacheStr] = SQL::fetch_md_array($results);
+		}
+
 		return SQL::fetch_md_array($results);
 	}
 
-	/*
-	static function select_multiple($table, $rows, $inArray) {
-		global $mysqli;
-		$in = str_repeat('?,', count($inArray) - 1) . '?';
-		$sql = "SELECT " . $rows . " FROM " . $table . " WHERE id IN ($in)";
-		$stmt = $mysqli->prepare($sql);
-		$types = str_repeat('s', count($inArray));
-		$stmt->bind_param($types, ...$inArray);
-		$stmt->execute();
-		$results = $stmt->get_result();
-		$stmt->close();
-		return SQL::fetch_md_array($results);
-	}
-
-	static function update_multiple($table, $set, $inArray) {
-		global $mysqli;
-		$in = str_repeat('?,', count($inArray) - 1) . '?';
-		$sql = "UPDATE " . $table . " SET " . $set . " WHERE id IN ($in)";
-		$stmt = $mysqli->prepare($sql);
-		$types = str_repeat('s', count($inArray));
-		$stmt->bind_param($types, ...$inArray);
-		$stmt->execute();
-	}
-	*/
-
-	static function init(string $host, string $database, string $username = "root", string $password = "") {
+	static function init(string $host, string $database, string $username = "root", string $password = "", bool $useCaching = false) {
 		$mysqli = mysqli_connect($host, $username, $password) or die("Can't connect to database");
 		mysqli_select_db($mysqli, $database) or die ("Can't select database");
 		mysqli_set_charset($mysqli, "utf8mb4");
-		return $mysqli;
+		return new SQLSession($mysqli, $useCaching);
 	}
 
 
@@ -164,5 +165,9 @@ class SQL {
 				break;
 		}
 		return false;
+	}
+
+	private static function toCacheString(string $query, string $paramtypes = "", ...$values) {
+		return implode("", [$query, $paramtypes, ...$values]);
 	}
 }
