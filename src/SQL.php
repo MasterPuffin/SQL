@@ -55,7 +55,7 @@ class SQL {
 
 		$cacheStr = self::toCacheString($query, $paramtypes, ...$values);
 		if ($sql->useCaching && array_key_exists($cacheStr, $sql->cache)) {
-			return $sql->cache[$stmt];
+			return $sql->cache[$cacheStr];
 		}
 
 		$stmt = $sql->mysqli->prepare($query);
@@ -82,7 +82,7 @@ class SQL {
 
 		$cacheStr = self::toCacheString($query, $paramtypes, ...$values);
 		if ($sql->useCaching && array_key_exists($cacheStr, $sql->cache)) {
-			return $sql->cache[$stmt];
+			return $sql->cache[$cacheStr];
 		}
 
 		$stmt = $sql->mysqli->prepare($query);
@@ -97,11 +97,11 @@ class SQL {
 		$results = $stmt->get_result();
 		$stmt->close();
 
+		$fetchedResults = SQL::fetch_md_array($results);
 		if ($sql->useCaching) {
-			$sql->cache[$cacheStr] = SQL::fetch_md_array($results);
+			$sql->cache[$cacheStr] = $fetchedResults;
 		}
-
-		return SQL::fetch_md_array($results);
+		return $fetchedResults;
 	}
 
 	static function init(string $host, string $database, string $username = "root", string $password = "", bool $useCaching = false) {
@@ -167,7 +167,7 @@ class SQL {
 		return false;
 	}
 
-	private static function toCacheString(string $query, string $paramtypes = "", ...$values) {
+	private static function toCacheString(string $query, string $paramtypes = "", ...$values): string {
 		return implode("", [$query, $paramtypes, ...$values]);
 	}
 }
