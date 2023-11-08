@@ -53,9 +53,11 @@ class SQL {
 	static function select(string $query, string $paramtypes = "", ...$values) {
 		global $sql;
 
-		$cacheStr = self::toCacheString($query, $paramtypes, ...$values);
-		if ($sql->useCaching && array_key_exists($cacheStr, $sql->cache)) {
-			return $sql->cache[$cacheStr];
+		if ($sql->useCaching) {
+			$cacheStr = self::toCacheString($query, $paramtypes, ...$values);
+			if (array_key_exists($cacheStr, $sql->cache)) {
+				return $sql->cache[$cacheStr];
+			}
 		}
 
 		$stmt = $sql->mysqli->prepare($query);
@@ -80,9 +82,11 @@ class SQL {
 	static function select_array(string $query, string $paramtypes = "", ...$values): array {
 		global $sql;
 
-		$cacheStr = self::toCacheString($query, $paramtypes, ...$values);
-		if ($sql->useCaching && array_key_exists($cacheStr, $sql->cache)) {
-			return $sql->cache[$cacheStr];
+		if ($sql->useCaching) {
+			$cacheStr = self::toCacheString($query, $paramtypes, ...$values);
+			if (array_key_exists($cacheStr, $sql->cache)) {
+				return $sql->cache[$cacheStr];
+			}
 		}
 
 		$stmt = $sql->mysqli->prepare($query);
@@ -168,6 +172,8 @@ class SQL {
 	}
 
 	private static function toCacheString(string $query, string $paramtypes = "", ...$values): string {
+		//This currently doesn't work with MD Arrays.
+		//TODO FIX
 		return implode("", [$query, $paramtypes, ...$values]);
 	}
 }
