@@ -3,10 +3,13 @@
 require_once 'SQLSession.php';
 
 class SQL {
+	//TODO make universal
+	private static string $legacyClassNamePrefix = 'App\\Models\\';
+
 	//Returns insert id
 	static function iud(string $query, string $paramtypes = "", ...$values): int {
 		//Escape HTML Code
-		$escaped = array();
+		$escaped = [];
 		foreach ($values as $value) {
 			if (is_string($value) && !self::is_serialized($value)) {
 				//Remove unwanted html elements
@@ -115,10 +118,9 @@ class SQL {
 		return new SQLSession($mysqli, $useCaching);
 	}
 
-
-//Helper functions
+	//Helper functions
 	static function fetch_md_array($results): array {
-		$array = array();
+		$array = [];
 		while ($row = mysqli_fetch_array($results)) {
 			$array[] = $row;
 		}
@@ -127,9 +129,15 @@ class SQL {
 	}
 
 	static function castQryToObj($query, $object): array {
-		$result = array();
+		$result = [];
 		foreach ($query as $entry) {
-			$tmp = new $object();
+			try {
+
+				$tmp = new $object();
+			} catch (Throwable $e) {
+				$object = self::$legacyClassNamePrefix . $object;
+				$tmp = new $object();
+			}
 			$tmp->cast($entry);
 			array_push($result, $tmp);
 		}
@@ -138,7 +146,7 @@ class SQL {
 
 	static function arrayToValue($data) {
 		if (is_null($data)) {
-			return NULL;
+			return null;
 		} else {
 			return array_shift($data);
 		}
@@ -174,6 +182,10 @@ class SQL {
 	private static function toCacheString(string $query, string $paramtypes = "", ...$values): string {
 		//This currently doesn't work with MD Arrays.
 		//TODO FIX
-		return implode("", [$query, $paramtypes, ...$values]);
+		return implode("", [
+			$query,
+			$paramtypes,
+			...$values
+		]);
 	}
 }
