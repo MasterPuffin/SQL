@@ -133,18 +133,72 @@ class SQL {
 	 */
 	static function castQryToObj($query, $object): array {
 		$result = [];
-		foreach ($query as $entry) {
-			try {
-				$tmp = new $object();
-			} catch (Throwable $e) {
-				if (!str_starts_with($object, self::$legacyClassNamePrefix)) {
-					$object = self::$legacyClassNamePrefix . $object;
-					$tmp = new $object();
-				} else {
-					throw $e;
-				}
+
+		// Get reflection of the class
+		try {
+			$reflection = new ReflectionClass($object);
+		} catch (Throwable $e) {
+			if (!str_starts_with($object, self::$legacyClassNamePrefix)) {
+				$object = self::$legacyClassNamePrefix . $object;
+				$reflection = new ReflectionClass($object);
+			} else {
+				throw $e;
 			}
-			$tmp->cast($entry);
+		}
+
+		foreach ($query as $entry) {
+			// Get constructor
+			$constructor = $reflection->getConstructor();
+
+			if ($constructor === null) {
+				// No constructor, create object directly
+				$tmp = $reflection->newInstance();
+			} else {
+				// Get constructor parameters
+				$params = $constructor->getParameters();
+				$constructorArgs = [];
+
+				// Build constructor arguments from entry data
+				foreach ($params as $param) {
+					$paramName = $param->getName();
+					if (isset($entry[$paramName])) {
+						$value = $entry[$paramName];
+						// Handle type conversion if needed
+						if ($param->hasType()) {
+							$type = $param->getType();
+							if ($type instanceof ReflectionNamedType) {
+								switch ($type->getName()) {
+									case 'int':
+										$value = (int)$value;
+										break;
+									case 'string':
+										$value = (string)$value;
+										break;
+									case 'float':
+										$value = (float)$value;
+										break;
+									case 'bool':
+										$value = (bool)$value;
+										break;
+								}
+							}
+						}
+						$constructorArgs[] = $value;
+					} else if ($param->isOptional()) {
+						$constructorArgs[] = $param->getDefaultValue();
+					} else {
+						throw new Exception("Missing required constructor parameter: $paramName");
+					}
+				}
+
+				// Create new instance with constructor arguments
+				$tmp = $reflection->newInstanceArgs($constructorArgs);
+			}
+
+			// Only call cast if the method exists
+			if (method_exists($tmp, 'cast')) {
+				$tmp->cast($entry);
+			}
 			$result[] = $tmp;
 		}
 		return $result;
