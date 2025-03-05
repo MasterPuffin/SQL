@@ -128,18 +128,24 @@ class SQL {
 		return $array;
 	}
 
+	/**
+	 * @throws Throwable
+	 */
 	static function castQryToObj($query, $object): array {
 		$result = [];
 		foreach ($query as $entry) {
 			try {
-
 				$tmp = new $object();
 			} catch (Throwable $e) {
-				$object = self::$legacyClassNamePrefix . $object;
-				$tmp = new $object();
+				if (!str_starts_with($object, self::$legacyClassNamePrefix)) {
+					$object = self::$legacyClassNamePrefix . $object;
+					$tmp = new $object();
+				} else {
+					throw $e;
+				}
 			}
 			$tmp->cast($entry);
-			array_push($result, $tmp);
+			$result[] = $tmp;
 		}
 		return $result;
 	}
